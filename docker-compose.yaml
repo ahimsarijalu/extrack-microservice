@@ -1,0 +1,178 @@
+services:
+  #Config Server
+  config-server:
+    container_name: config-server
+#    image: config-server:latest
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://config-server:8888/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "8888:8888"
+    networks:
+      - extrack-network
+
+  #Eureka Service
+  eureka-service:
+    container_name: eureka-service
+#    image: eureka-service:latest
+    build:
+      context: ./eureka-service
+      dockerfile: Dockerfile
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://eureka-service:8761/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      config-server:
+        condition: service_healthy
+    ports:
+      - "8761:8761"
+    networks:
+      - extrack-network
+
+  #Gateway Service
+  gateway-service:
+    container_name: gateway-service
+#    image: gateway-service:latest
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://gateway-service:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "8080:8080"
+    networks:
+      - extrack-network
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+
+  #Auth Service
+  auth-service:
+    container_name: auth-service
+#    image: auth-service:latest
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://auth-service:8081/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      - AUTH_POSTGRES_USER=${AUTH_POSTGRES_USER}
+      - AUTH_POSTGRES_PASSWORD=${AUTH_POSTGRES_PASSWORD}
+      - AUTH_POSTGRES_DB=${AUTH_POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
+    ports:
+      - "8081:8081"
+    networks:
+      - extrack-network
+      - auth_network
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+      gateway-service:
+        condition: service_healthy
+  auth-db:
+    container_name: auth-db
+    image: postgres:16-alpine
+    ports:
+      - "${AUTH_POSTGRES_PORT}:5432"
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${AUTH_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${AUTH_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${AUTH_POSTGRES_DB}
+    networks:
+      - auth_network
+
+    #Fund Service
+  fund-service:
+    container_name: fund-service
+#    image: fund-service:latest
+    build:
+      context: ./fund-service
+      dockerfile: Dockerfile
+    environment:
+      - FUND_POSTGRES_USER=${FUND_POSTGRES_USER}
+      - FUND_POSTGRES_PASSWORD=${FUND_POSTGRES_PASSWORD}
+      - FUND_POSTGRES_DB=${FUND_POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "8082:8082"
+    networks:
+      - extrack-network
+      - fund_network
+    depends_on:
+      eureka-service:
+        condition: service_healthy
+      gateway-service:
+        condition: service_healthy
+  fund-db:
+    container_name: fund-db
+    image: postgres:16-alpine
+    ports:
+      - "${FUND_POSTGRES_PORT}:5432"
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${FUND_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${FUND_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${FUND_POSTGRES_DB}
+    networks:
+      - fund_network
+
+    #Expense Service
+  expense-service:
+    container_name: expense-service
+#    image: expense-service:latest
+    build:
+      context: ./expense-service
+      dockerfile: Dockerfile
+    environment:
+      - EXPENSE_POSTGRES_USER=${EXPENSE_POSTGRES_USER}
+      - EXPENSE_POSTGRES_PASSWORD=${EXPENSE_POSTGRES_PASSWORD}
+      - EXPENSE_POSTGRES_DB=${EXPENSE_POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "8083:8083"
+    networks:
+      - extrack-network
+      - expense_network
+    depends_on:
+      - eureka-service
+      - gateway-service
+  expense-db:
+    container_name: expense-db
+    image: postgres:16-alpine
+    ports:
+      - "${EXPENSE_POSTGRES_PORT}:5432"
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${EXPENSE_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${EXPENSE_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${EXPENSE_POSTGRES_DB}
+    networks:
+      - expense_network
+
+networks:
+  extrack-network:
+    driver: bridge
+  auth_network:
+    driver: bridge
+  fund_network:
+    driver: bridge
+  expense_network:
+    driver: bridge
