@@ -23,6 +23,11 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello from User Service";
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDTO>> getUserById(@PathVariable String id) {
         UserDTO user = userService.getUserById(id);
@@ -31,9 +36,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDTO>> updateUser(@PathVariable String id, @RequestBody UserDTO userDTO) {
-        userService.updateUser(id, userDTO);
-        UserDTO updatedUser = userService.getUserById(id);
-
+        UserDTO updatedUser =  userService.updateUser(id, userDTO);
         return ResponseEntity.ok(mapToApiResponse(HttpStatus.OK.value(), true, "User updated successfully", updatedUser));
     }
 

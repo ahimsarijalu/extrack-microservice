@@ -152,8 +152,10 @@ services:
       - extrack-network
       - expense_network
     depends_on:
-      - eureka-service
-      - gateway-service
+      eureka-service:
+        condition: service_healthy
+      gateway-service:
+        condition: service_healthy
   expense-db:
     container_name: expense-db
     image: postgres:16-alpine

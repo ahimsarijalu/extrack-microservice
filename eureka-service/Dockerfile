@@ -1,17 +1,23 @@
-# Stage 1: Build the application
-FROM maven:3.9.9-amazoncorretto-21 AS builder
+# Stage 1: Base image for Maven dependencies
+FROM maven:3.9.9-amazoncorretto-21 AS base
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the pom.xml and the source code to the container
+# Copy the pom.xml file and download dependencies only (cache step)
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Stage 2: Build the application
+FROM base AS builder
+
+# Copy the source code to the container
 COPY src ./src
 
-# Build the application (this will generate the .jar file in the target/ directory)
-RUN mvn clean install -DskipTests
+# Build the application
+RUN mvn package -DskipTests
 
-# Stage 2: Create the runtime image
+# Stage 3: Create the runtime image
 FROM openjdk:21
 
 # Set the working directory for the runtime container

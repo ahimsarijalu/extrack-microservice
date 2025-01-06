@@ -37,17 +37,10 @@ public class FundService {
     }
 
     public List<FundDTO> getAllFundsByUserId(String userId) {
-        List<FundDTO> funds = fundRepository.findAllByUserId(UUID.fromString(userId))
+        return fundRepository.findAllByUserId(UUID.fromString(userId))
                 .stream()
                 .map((fund) -> mapFundToDTO(fund, expenseClient.getExpenseByFundId(fund.getId().toString()).getData()))
                 .collect(Collectors.toList());
-
-
-        if (funds.isEmpty()) {
-            throw new EntityNotFoundException("No Funds found for this user");
-        }
-
-        return funds;
     }
 
     public FundDTO getFundByUserId(String userId) {
@@ -58,8 +51,12 @@ public class FundService {
 //        userRepository.findById(UUID.fromString(userId))
 //                .orElseThrow(() -> new EntityNotFoundException("User not found with this id: " + userId));
 
-        return mapFundToDTOWithoutExpenses(fundRepository.findById(UUID.fromString(fundId))
-                .orElseThrow(() -> new EntityNotFoundException("Fund not found with this id: " + fundId)));
+        return mapFundToDTO(fundRepository.findById(UUID.fromString(fundId))
+                        .orElseThrow(() -> new EntityNotFoundException("Fund not found with this id: " + fundId)),
+                expenseClient.getExpenseByFundId(fundId).getData());
+
+//                mapFundToDTOWithoutExpenses(fundRepository.findById(UUID.fromString(fundId))
+//                .orElseThrow(() -> new EntityNotFoundException("Fund not found with this id: " + fundId)));
     }
 
     public FundDTO updateFund(String userId, String fundId, FundDTO fundDTO) {
@@ -82,7 +79,7 @@ public class FundService {
 //        userRepository.findById(UUID.fromString(userId))
 //                .orElseThrow(() -> new EntityNotFoundException("User not found with this id: " + userId));
         Fund fund = fundRepository.findById(UUID.fromString(fundId))
-                .orElseThrow(() -> new EntityNotFoundException("User not found with this id: " + fundId));
+                .orElseThrow(() -> new EntityNotFoundException("Fund not found with this id: " + fundId));
         fundRepository.delete(fund);
     }
 

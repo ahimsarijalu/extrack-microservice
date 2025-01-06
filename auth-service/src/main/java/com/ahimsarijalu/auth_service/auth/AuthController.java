@@ -55,4 +55,14 @@ public class AuthController {
         jwt.setUser(mapUserToDTOWithoutFunds(user));
         return ResponseEntity.ok(mapToApiResponse(HttpStatus.OK.value(), true, "User logged in successfully", jwt));
     }
+
+    @GetMapping("/validate")
+    public ResponseEntity<String> validateToken(@RequestParam String token) {
+        try {
+            String userEmail = tokenProvider.validateToken(token);
+            return ResponseEntity.ok("valid");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("invalid");
+        }
+    }
 }
