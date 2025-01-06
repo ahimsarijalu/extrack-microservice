@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      default-zone: http://eureka-service:8761/eureka/
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+        routes:
+          - id: auth-service
+            uri: lb://auth-service
+            predicates:
+              - Path=/auth/**
+          - id: fund-service
+            uri: lb://fund-service
+            predicates:
+              - Path=/fund/**
+          - id: expense-service
+            uri: lb://expense-service
+            predicates:
+              - Path=/expense/**
