@@ -1,5 +1,5 @@
 # Stage 1: Base image for Maven dependencies
-FROM maven:3.9.9-amazoncorretto-21 AS base
+FROM maven:3.9.9-amazoncorretto-17 AS base
 
 # Set the working directory
 WORKDIR /app
@@ -18,7 +18,7 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # Stage 3: Create the runtime image
-FROM openjdk:21
+FROM maven:3.9.9-amazoncorretto-17
 
 # Set the working directory for the runtime container
 WORKDIR /app
