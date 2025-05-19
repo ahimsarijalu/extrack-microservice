@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name = "expense-service", url = "http://expense-service:8083")
+@FeignClient(name = "expense-service", url = "http://expense-service:8080")
 public interface ExpenseClient {
     @GetMapping("/expense/{fundId}")
     ApiResponse<List<ExpenseDTO>> getExpenseByFundId(@PathVariable String fundId);
