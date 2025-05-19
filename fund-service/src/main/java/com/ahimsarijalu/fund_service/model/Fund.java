@@ -13,7 +13,7 @@ import java.util.UUID;
 public class Fund {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @JdbcTypeCode(Types.VARCHAR)
     private UUID id;
 

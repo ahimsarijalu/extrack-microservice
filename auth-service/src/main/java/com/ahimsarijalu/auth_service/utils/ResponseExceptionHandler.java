@@ -20,7 +20,7 @@ public class ResponseExceptionHandler {
         ApiResponse<T> response = new ApiResponse<>(
                 HttpStatus.NOT_FOUND.value(),
                 false,
-                e.getMessage(),
+                "User Service: " + e.getMessage(),
                 null
         );
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
@@ -38,7 +38,7 @@ public class ResponseExceptionHandler {
                     .stream()
                     .map(DefaultMessageSourceResolvable::getDefaultMessage)
                     .collect(Collectors.toList());
-            errorMessage = "Validation error(s) occurred.";
+            errorMessage = "User Service: Validation error(s) occurred.";
         } else if (e instanceof IllegalArgumentException) {
             errorMessage = e.getMessage();
         }
@@ -46,7 +46,7 @@ public class ResponseExceptionHandler {
         ApiResponse<List<String>> response = new ApiResponse<>(
                 HttpStatus.BAD_REQUEST.value(),
                 false,
-                errorMessage,
+                "User Service: " + errorMessage,
                 errorDetails
         );
 
@@ -58,7 +58,7 @@ public class ResponseExceptionHandler {
         ApiResponse<T> response = new ApiResponse<>(
                 e.getStatusCode().value(),
                 false,
-                e.getReason(),
+                "User Service: " + e.getReason(),
                 null
         );
         return new ResponseEntity<>(response, e.getStatusCode());
@@ -69,7 +69,7 @@ public class ResponseExceptionHandler {
         ApiResponse<T> response = new ApiResponse<>(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 false,
-                "An unexpected error occurred: " + e.getMessage(),
+                "User Service: " + "An unexpected error occurred: " + e.getMessage(),
                 null
         );
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
