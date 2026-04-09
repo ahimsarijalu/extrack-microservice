@@ -1,20 +1,45 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: gateway-ingress
+  name: extrack-ingress
   namespace: extrack
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Strip the matched path prefix before forwarding to the backend service
+    traefik.ingress.kubernetes.io/router.middlewares: extrack-strip-prefix@kubernetescrd
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
     - host: extrack.local
       http:
         paths:
-          - path: /
+          # auth-service handles /auth/** and /users/**
+          - path: /auth
             pathType: Prefix
             backend:
               service:
-                name: gateway-service
+                name: auth-service
+                port:
+                  number: 8080
+          - path: /users
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8080
+          # fund-service handles /fund/**
+          - path: /fund
+            pathType: Prefix
+            backend:
+              service:
+                name: fund-service
+                port:
+                  number: 8080
+          # expense-service handles /expense/**
+          - path: /expense
+            pathType: Prefix
+            backend:
+              service:
+                name: expense-service
                 port:
                   number: 8080
