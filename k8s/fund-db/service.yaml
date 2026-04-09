@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fund-db
+  namespace: extrack
+  labels:
+    app: fund-db
+spec:
+  selector:
+    app: fund-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP

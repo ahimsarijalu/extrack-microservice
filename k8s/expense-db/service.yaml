@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: expense-db
+  namespace: extrack
+  labels:
+    app: expense-db
+spec:
+  selector:
+    app: expense-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
