@@ -25,18 +25,28 @@ spec:
             - --providers.kubernetesingress.ingressclass=traefik
             # Watch only the extrack namespace
             - --providers.kubernetesingress.namespaces=extrack
-            # HTTP entrypoint
+            # HTTP entrypoint — redirects all traffic to HTTPS
             - --entrypoints.web.address=:80
+            - --entrypoints.web.http.redirections.entrypoint.to=websecure
+            - --entrypoints.web.http.redirections.entrypoint.scheme=https
+            - --entrypoints.web.http.redirections.entrypoint.permanent=true
+            # HTTPS entrypoint — TLS terminated here; cert managed by cert-manager
+            - --entrypoints.websecure.address=:443
             # Dashboard (disable in production or add authentication)
             - --api.dashboard=true
             - --api.insecure=true
             - --entrypoints.traefik.address=:9000
+            # Enable ping endpoint used by health probes
+            - --ping=true
+            - --ping.entrypoint=traefik
             # Logging
             - --log.level=INFO
             - --accesslog=true
           ports:
             - name: web
               containerPort: 80
+            - name: websecure
+              containerPort: 443
             - name: dashboard
               containerPort: 9000
           readinessProbe:

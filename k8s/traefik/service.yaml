@@ -13,6 +13,10 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 80
+    - name: websecure
+      protocol: TCP
+      port: 443
+      targetPort: 443
     - name: dashboard
       protocol: TCP
       port: 9000

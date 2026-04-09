@@ -4,10 +4,17 @@ metadata:
   name: extrack-ingress
   namespace: extrack
   annotations:
-    # Strip the matched path prefix before forwarding to the backend service
-    traefik.ingress.kubernetes.io/router.middlewares: extrack-strip-prefix@kubernetescrd
+    # Force HTTPS — Traefik redirects HTTP → HTTPS at the entrypoint level,
+    # but this annotation ensures the router only listens on the secure entrypoint.
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
 spec:
   ingressClassName: traefik
+  # TLS termination: cert-manager provisions and rotates the certificate
+  # automatically (ACME in production, internal CA in dev/staging).
+  tls:
+    - hosts:
+        - extrack.local
+      secretName: extrack-ingress-tls-secret   # populated by cert-manager
   rules:
     - host: extrack.local
       http:

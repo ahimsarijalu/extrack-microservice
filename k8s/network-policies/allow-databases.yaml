@@ -1,0 +1,65 @@
+# Each database only accepts connections from its owning service.
+# No other pod may reach a database, implementing strict data-plane isolation
+# consistent with ING's zero-trust "identify yourself before connecting" model.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-auth-service-to-auth-db
+  namespace: extrack
+spec:
+  podSelector:
+    matchLabels:
+      app: auth-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: auth-service
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fund-service-to-fund-db
+  namespace: extrack
+spec:
+  podSelector:
+    matchLabels:
+      app: fund-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: fund-service
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-expense-service-to-expense-db
+  namespace: extrack
+spec:
+  podSelector:
+    matchLabels:
+      app: expense-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: expense-service
+      ports:
+        - protocol: TCP
+          port: 5432

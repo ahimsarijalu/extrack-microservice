@@ -2,3 +2,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: extrack
+  annotations:
+    # Linkerd: automatically inject the mTLS sidecar proxy into every pod in
+    # this namespace, enabling zero-trust mutual TLS for all service-to-service
+    # traffic without any code changes — mirroring ING's approach of providing
+    # security as infrastructure rather than a developer concern.
+    linkerd.io/inject: enabled

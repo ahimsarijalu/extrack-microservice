@@ -1,0 +1,60 @@
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  # Name must match the in-cluster DNS name of the Service.
+  name: auth-service.extrack.svc.cluster.local
+  namespace: extrack
+spec:
+  # Retry budget: at most 20% of requests may be retries, with a floor of
+  # 10 retries/sec to avoid starving low-traffic routes. Mirrors ING's
+  # resiliency policy of retrying only safe (idempotent) operations.
+  retryBudget:
+    retryRatio: 0.2
+    minRetriesPerSecond: 10
+    ttl: 10s
+
+  routes:
+    # --- Authentication ---
+    - name: POST /auth/login
+      condition:
+        method: POST
+        pathRegex: /auth/login
+      # Never retry login: non-idempotent, retrying can cause account lockouts.
+      isRetryable: false
+      timeout: 10s
+
+    - name: POST /auth/register
+      condition:
+        method: POST
+        pathRegex: /auth/register
+      isRetryable: false
+      timeout: 10s
+
+    - name: POST /auth/refresh
+      condition:
+        method: POST
+        pathRegex: /auth/refresh
+      isRetryable: false
+      timeout: 10s
+
+    # --- Users (read-only: safe to retry) ---
+    - name: GET /users
+      condition:
+        method: GET
+        pathRegex: /users(/.*)?
+      isRetryable: true
+      timeout: 5s
+
+    - name: PUT /users
+      condition:
+        method: PUT
+        pathRegex: /users(/.*)?
+      isRetryable: false
+      timeout: 10s
+
+    - name: DELETE /users
+      condition:
+        method: DELETE
+        pathRegex: /users(/.*)?
+      isRetryable: false
+      timeout: 10s

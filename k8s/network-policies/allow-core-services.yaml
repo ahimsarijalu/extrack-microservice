@@ -1,0 +1,67 @@
+# Allow every workload to reach the core infrastructure services:
+#   • config-server (8888) — Spring Cloud Config pulls on startup
+#   • eureka-service (8761) — service registration and discovery
+#
+# This mirrors ING's "dynamic service discovery" requirement: all workloads
+# must be able to self-register and look up peers at runtime.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-to-config-server
+  namespace: extrack
+spec:
+  podSelector:
+    matchLabels:
+      app: config-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}   # any pod in the extrack namespace
+      ports:
+        - protocol: TCP
+          port: 8888
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-to-eureka
+  namespace: extrack
+spec:
+  podSelector:
+    matchLabels:
+      app: eureka-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8761
+
+---
+# fund-service calls expense-service directly (inter-service, Eureka-discovered).
+# Allowing this connection explicitly enforces the known dependency graph and
+# prevents unexpected lateral movement between domain services.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fund-to-expense
+  namespace: extrack
+spec:
+  podSelector:
+    matchLabels:
+      app: expense-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: fund-service
+      ports:
+        - protocol: TCP
+          port: 8080

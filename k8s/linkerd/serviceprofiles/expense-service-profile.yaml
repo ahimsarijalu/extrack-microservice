@@ -1,0 +1,41 @@
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: expense-service.extrack.svc.cluster.local
+  namespace: extrack
+spec:
+  retryBudget:
+    retryRatio: 0.2
+    minRetriesPerSecond: 10
+    ttl: 10s
+
+  routes:
+    # --- Expense reads (idempotent: retryable) ---
+    - name: GET /expense
+      condition:
+        method: GET
+        pathRegex: /expense(/.*)?
+      isRetryable: true
+      timeout: 5s
+
+    # --- Expense writes (non-idempotent: never retry) ---
+    - name: POST /expense
+      condition:
+        method: POST
+        pathRegex: /expense(/.*)?
+      isRetryable: false
+      timeout: 10s
+
+    - name: PUT /expense
+      condition:
+        method: PUT
+        pathRegex: /expense(/.*)?
+      isRetryable: false
+      timeout: 10s
+
+    - name: DELETE /expense
+      condition:
+        method: DELETE
+        pathRegex: /expense(/.*)?
+      isRetryable: false
+      timeout: 10s
