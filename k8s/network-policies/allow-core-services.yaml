@@ -1,0 +1,22 @@
+# fund-service calls expense-service directly (inter-service via K8s DNS).
+# Allowing this connection explicitly enforces the known dependency graph and
+# prevents unexpected lateral movement between domain services.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fund-to-expense
+  namespace: extrack
+spec:
+  podSelector:
+    matchLabels:
+      app: expense-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: fund-service
+      ports:
+        - protocol: TCP
+          port: 8080

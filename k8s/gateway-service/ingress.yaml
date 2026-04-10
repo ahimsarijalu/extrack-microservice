@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: extrack-ingress
+  namespace: extrack
+  annotations:
+    # Force HTTPS — Traefik redirects HTTP → HTTPS at the entrypoint level,
+    # but this annotation ensures the router only listens on the secure entrypoint.
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  # TLS termination: cert-manager provisions and rotates the certificate
+  # automatically (ACME in production, internal CA in dev/staging).
+  tls:
+    - hosts:
+        - extrack.local
+      secretName: extrack-ingress-tls-secret   # populated by cert-manager
+  rules:
+    - host: extrack.local
+      http:
+        paths:
+          # auth-service handles /auth/** and /users/**
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8080
+          - path: /users
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8080
+          # fund-service handles /fund/**
+          - path: /fund
+            pathType: Prefix
+            backend:
+              service:
+                name: fund-service
+                port:
+                  number: 8080
+          # expense-service handles /expense/**
+          - path: /expense
+            pathType: Prefix
+            backend:
+              service:
+                name: expense-service
+                port:
+                  number: 8080

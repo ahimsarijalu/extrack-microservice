@@ -1,50 +1,5 @@
 services:
-  #Config Server
-  config-server:
-    container_name: config-server
-#    image: config-server:latest
-    build:
-      context: ./config-server
-      dockerfile: ../Base.Dockerfile
-      args:
-        SERVICE_SRC: .
-        JAR_NAME: config-server-0.0.1-SNAPSHOT.jar
-        EXPOSE_PORT: 8888
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://config-server:8888/actuator/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    ports:
-      - "8888:8888"
-    networks:
-      - extrack-network
-
-  #Eureka Service
-  eureka-service:
-    container_name: eureka-service
-#    image: eureka-service:latest
-    build:
-      context: ./eureka-service
-      dockerfile: ../Base.Dockerfile
-      args:
-        SERVICE_SRC: .
-        JAR_NAME: eureka-service-0.0.1-SNAPSHOT.jar
-        EXPOSE_PORT: 8761
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://eureka-service:8761/actuator/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    depends_on:
-      config-server:
-        condition: service_healthy
-    ports:
-      - "8761:8761"
-    networks:
-      - extrack-network
-
-  #Gateway Service
+  #Gateway Service (local dev only — replaced by Traefik in Kubernetes)
   gateway-service:
     container_name: gateway-service
 #    image: gateway-service:latest
@@ -64,11 +19,6 @@ services:
       - "8080:8080"
     networks:
       - extrack-network
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
-    depends_on:
-      eureka-service:
-        condition: service_healthy
 
   #Auth Service
   auth-service:
@@ -91,15 +41,12 @@ services:
       - AUTH_POSTGRES_PASSWORD=${AUTH_POSTGRES_PASSWORD}
       - AUTH_POSTGRES_DB=${AUTH_POSTGRES_DB}
       - JWT_SECRET=${JWT_SECRET}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-service:8761/eureka/
     ports:
       - "8081:8080"
     networks:
       - extrack-network
       - auth_network
     depends_on:
-      eureka-service:
-        condition: service_healthy
       gateway-service:
         condition: service_healthy
   auth-db:
@@ -137,8 +84,6 @@ services:
       - extrack-network
       - fund_network
     depends_on:
-      eureka-service:
-        condition: service_healthy
       gateway-service:
         condition: service_healthy
   fund-db:
@@ -176,8 +121,6 @@ services:
       - extrack-network
       - expense_network
     depends_on:
-      eureka-service:
-        condition: service_healthy
       gateway-service:
         condition: service_healthy
   expense-db:

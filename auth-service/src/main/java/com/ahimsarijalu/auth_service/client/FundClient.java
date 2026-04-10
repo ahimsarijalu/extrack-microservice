@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name = "fund-service")
+@FeignClient(name = "fund-service", url = "http://fund-service:8080")
 public interface FundClient {
     @GetMapping("/fund/{userId}")
     ApiResponse<List<FundDTO>> getFundsByUserId(@PathVariable String userId);

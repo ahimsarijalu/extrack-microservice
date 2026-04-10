@@ -1,0 +1,18 @@
+# Zero-trust baseline: deny all ingress to every pod in the extrack namespace.
+# Every allowed communication path must be explicitly permitted by a subsequent
+# NetworkPolicy. This directly implements ING's principle: "all workloads need
+# to communicate with an encrypted connection and need to identify themselves
+# before the connection can be made."
+#
+# Note: egress is intentionally left unrestricted at the NetworkPolicy level;
+# mTLS via Linkerd enforces identity-based authentication on outbound
+# connections, providing the zero-trust guarantee on the egress side.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: extrack
+spec:
+  podSelector: {}   # applies to every pod in the namespace
+  policyTypes:
+    - Ingress

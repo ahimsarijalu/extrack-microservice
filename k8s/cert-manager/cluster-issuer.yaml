@@ -1,0 +1,67 @@
+---
+# Self-signed CA issuer — used as the root to sign the internal CA certificate.
+# This is the starting point for the internal PKI chain.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: extrack-selfsigned-root
+spec:
+  selfSigned: {}
+
+---
+# Internal CA certificate — issued by the self-signed root above.
+# All internal TLS certificates (e.g. Traefik edge TLS for non-prod) are
+# signed by this CA, keeping the chain short and manageable.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: extrack-internal-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: extrack-internal-ca
+  secretName: extrack-internal-ca-secret
+  duration: 87600h  # 10 years
+  renewBefore: 720h # 30 days
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: extrack-selfsigned-root
+    kind: ClusterIssuer
+
+---
+# Internal CA issuer — signs workload certificates using the CA above.
+# Use this for in-cluster TLS (e.g. Traefik edge certificate in dev/staging).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: extrack-internal-ca
+spec:
+  ca:
+    secretName: extrack-internal-ca-secret
+
+---
+# ACME / Let's Encrypt issuer — implements the ACME protocol described in the
+# ING article ("certificates can be requested automatically on deployment using
+# the ACME protocol"). Use this for production edge TLS on public clusters.
+#
+# Prerequisites:
+#   1. Replace ops@example.com with a real ops email address.
+#   2. The cluster's Traefik LoadBalancer IP must be publicly reachable on
+#      port 80 so the HTTP-01 challenge can be solved.
+#   3. extrack.example.com must resolve to that IP in public DNS.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: extrack-letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ops@example.com          # ← replace before applying to production
+    privateKeySecretRef:
+      name: letsencrypt-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik

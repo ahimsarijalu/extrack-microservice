@@ -1,0 +1,25 @@
+# TLS certificate for the Traefik edge ingress.
+#
+# In development / staging: uses the internal CA (extrack-internal-ca).
+# In production:            switch issuerRef.name to extrack-letsencrypt and
+#                           update dnsNames to match your public hostname.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: extrack-ingress-tls
+  namespace: extrack
+spec:
+  secretName: extrack-ingress-tls-secret
+  duration: 2160h     # 90 days
+  renewBefore: 360h   # renew 15 days before expiry (cert-manager handles this)
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  dnsNames:
+    - extrack.local                  # local / dev hostname
+    # - extrack.example.com          # ← uncomment for production
+  issuerRef:
+    name: extrack-internal-ca        # dev/staging: internal CA
+    kind: ClusterIssuer
+    # name: extrack-letsencrypt      # ← switch to this for production (ACME)
+    # kind: ClusterIssuer

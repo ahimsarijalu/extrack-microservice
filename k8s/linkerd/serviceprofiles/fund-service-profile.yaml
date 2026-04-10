@@ -1,0 +1,41 @@
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: fund-service.extrack.svc.cluster.local
+  namespace: extrack
+spec:
+  retryBudget:
+    retryRatio: 0.2
+    minRetriesPerSecond: 10
+    ttl: 10s
+
+  routes:
+    # --- Fund reads (idempotent: retryable) ---
+    - name: GET /fund
+      condition:
+        method: GET
+        pathRegex: /fund(/.*)?
+      isRetryable: true
+      timeout: 5s
+
+    # --- Fund writes (non-idempotent: never retry) ---
+    - name: POST /fund
+      condition:
+        method: POST
+        pathRegex: /fund(/.*)?
+      isRetryable: false
+      timeout: 10s
+
+    - name: PUT /fund
+      condition:
+        method: PUT
+        pathRegex: /fund(/.*)?
+      isRetryable: false
+      timeout: 10s
+
+    - name: DELETE /fund
+      condition:
+        method: DELETE
+        pathRegex: /fund(/.*)?
+      isRetryable: false
+      timeout: 10s

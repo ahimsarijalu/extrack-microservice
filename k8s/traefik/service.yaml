@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: extrack
+  labels:
+    app: traefik
+spec:
+  selector:
+    app: traefik
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: websecure
+      protocol: TCP
+      port: 443
+      targetPort: 443
+    - name: dashboard
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+  # Use LoadBalancer for cloud environments (GKE, EKS, AKS).
+  # Change to NodePort for local clusters (minikube, kind).
+  type: LoadBalancer
