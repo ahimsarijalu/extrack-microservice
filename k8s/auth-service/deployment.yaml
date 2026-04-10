@@ -16,16 +16,6 @@ spec:
         app: auth-service
     spec:
       initContainers:
-        - name: wait-for-eureka
-          image: busybox:1.35
-          command:
-            - sh
-            - -c
-            - |
-              until wget -q -O- http://eureka-service:8761/actuator/health 2>/dev/null | grep -q '"status":"UP"'; do
-                echo "Waiting for eureka-service to be ready..."
-                sleep 5
-              done
         - name: wait-for-auth-db
           image: busybox:1.35
           command:
@@ -64,8 +54,6 @@ spec:
                 secretKeyRef:
                   name: auth-secret
                   key: JWT_SECRET
-            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-              value: "http://eureka-service:8761/eureka/"
           readinessProbe:
             httpGet:
               path: /actuator/health

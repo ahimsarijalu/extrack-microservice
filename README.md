@@ -35,17 +35,11 @@ A Java Spring Boot microservices application for expense and fund tracking. This
        auth-service      fund-service      expense-service
             │                 │                  │
         auth-db           fund-db           expense-db
-            └─────────────────┼──────────────────┘
-                              │
-                   ┌──────────┴──────────┐
-                   ▼                     ▼
-             config-server         eureka-service
-                (8888)               (8761)
 
   ════════════════ Linkerd mTLS sidecar on every pod ════════════════
 ```
 
-All service-to-service traffic inside the cluster is encrypted with **mutual TLS** via Linkerd, implementing a zero-trust architecture where every workload must authenticate before any connection is accepted.
+All service-to-service traffic inside the cluster is encrypted with **mutual TLS** via Linkerd, implementing a zero-trust architecture where every workload must authenticate before any connection is accepted. Service discovery is handled natively by Kubernetes DNS — no Eureka registry is required.
 
 ---
 
@@ -53,9 +47,6 @@ All service-to-service traffic inside the cluster is encrypted with **mutual TLS
 
 | Service | Port | Role |
 |---|---|---|
-| `config-server` | 8888 | Spring Cloud Config Server — centralises application configuration |
-| `eureka-service` | 8761 | Spring Eureka Server — service registry and discovery |
-| `gateway-service` | — | Replaced by **Traefik** (see [Gateway](#gateway-traefik)) |
 | `auth-service` | 8080 | Authentication and user management (JWT issuance) |
 | `fund-service` | 8080 | Fund management |
 | `expense-service` | 8080 | Expense tracking |
@@ -63,15 +54,14 @@ All service-to-service traffic inside the cluster is encrypted with **mutual TLS
 | `fund-db` | 5432 | PostgreSQL database for fund-service |
 | `expense-db` | 5432 | PostgreSQL database for expense-service |
 
+> **Note:** `config-server`, `eureka-service`, and the Java `gateway-service` have been removed. Spring Cloud Config and Eureka are superseded by Kubernetes-native configuration (Secrets/ConfigMaps) and DNS-based service discovery. The Java gateway is replaced by **Traefik** (see [Gateway](#gateway-traefik)).
+
 ### Startup Order
 
 Services have init-container health gates that enforce this startup order:
 
 ```
-config-server → eureka-service → gateway (Traefik)
-                              → auth-service (+ auth-db ready)
-                              → fund-service (+ fund-db ready)
-                              → expense-service (+ expense-db ready)
+databases ready → domain services start (auth-service, fund-service, expense-service)
 ```
 
 ---
@@ -105,9 +95,10 @@ docker compose up --build
 
 | Service | Local URL |
 |---|---|
-| Gateway (Spring) | http://localhost:8080 |
-| Eureka dashboard | http://localhost:8761 |
-| Config server | http://localhost:8888 |
+| Gateway (Spring, local dev only) | http://localhost:8080 |
+| auth-service (direct) | http://localhost:8081 |
+| fund-service (direct) | http://localhost:8082 |
+| expense-service (direct) | http://localhost:8083 |
 
 ---
 
@@ -174,22 +165,18 @@ kubectl apply -f k8s/auth-db/
 kubectl apply -f k8s/fund-db/
 kubectl apply -f k8s/expense-db/
 
-# 6. Core infrastructure
-kubectl apply -f k8s/config-server/
-kubectl apply -f k8s/eureka-service/
-
-# 7. Edge gateway
+# 6. Edge gateway
 kubectl apply -f k8s/traefik/
 
-# 8. Domain services
+# 7. Domain services
 kubectl apply -f k8s/auth-service/
 kubectl apply -f k8s/fund-service/
 kubectl apply -f k8s/expense-service/
 
-# 9. Ingress routing
+# 8. Ingress routing
 kubectl apply -f k8s/gateway-service/ingress.yaml
 
-# 10. Linkerd ServiceProfiles (resiliency + per-route observability)
+# 9. Linkerd ServiceProfiles (resiliency + per-route observability)
 kubectl apply -f k8s/linkerd/serviceprofiles/
 ```
 
@@ -276,13 +263,12 @@ TLS is terminated at Traefik. Certificates are provisioned and rotated automatic
 `k8s/network-policies/` enforces the principle that no pod may receive a connection it has not explicitly been granted. Policies are additive — the default deny is the baseline, and each additional policy opens exactly one communication path.
 
 ```
-default-deny-ingress          → blocks all ingress to every pod
-allow-traefik-ingress         → Traefik → auth-service, fund-service, expense-service
-allow-core-services           → all pods → config-server (8888) and eureka (8761)
-                              → fund-service → expense-service (inter-service call)
-allow-databases               → auth-service → auth-db
-                              → fund-service → fund-db
-                              → expense-service → expense-db
+default-deny-ingress    → blocks all ingress to every pod
+allow-traefik-ingress   → Traefik → auth-service, fund-service, expense-service
+allow-core-services     → fund-service → expense-service (inter-service call)
+allow-databases         → auth-service → auth-db
+                        → fund-service → fund-db
+                        → expense-service → expense-db
 ```
 
 Linkerd's mTLS provides the identity layer on top of these network-level rules. Together they implement defence-in-depth: a compromised pod cannot reach any service it was not already permitted to call, and even permitted connections require a valid mTLS certificate.
@@ -313,7 +299,7 @@ k8s/
 ├── network-policies/
 │   ├── default-deny-ingress.yaml           # Zero-trust baseline
 │   ├── allow-traefik-ingress.yaml          # Traefik → domain services
-│   ├── allow-core-services.yaml            # All pods → config-server, eureka
+│   ├── allow-core-services.yaml            # fund-service → expense-service
 │   └── allow-databases.yaml               # Each service → its own DB only
 │
 ├── traefik/
@@ -323,14 +309,6 @@ k8s/
 │
 ├── gateway-service/
 │   └── ingress.yaml                        # Route /auth /users /fund /expense → backends
-│
-├── config-server/
-│   ├── deployment.yaml
-│   └── service.yaml                        # ClusterIP :8888
-│
-├── eureka-service/
-│   ├── deployment.yaml
-│   └── service.yaml                        # ClusterIP :8761
 │
 ├── auth-service/
 │   ├── deployment.yaml
